@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify, send_from_directory
-import json, re, time, random, os
-from datetime import datetime, timedelta
+import json, re, time, os
+from datetime import datetime
 import urllib.request
-import os
 
 app = Flask(__name__, static_folder='static')
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+API_KEY = os.environ.get("ANTHROPIC_API_KEY", "YOUR_API_KEY_HERE")
 
 def call_claude(text):
     prompt = f"""You are a fake news detection AI. Analyze the following news article/headline and return ONLY a valid JSON object (no markdown, no explanation).
@@ -35,16 +35,16 @@ Return this exact JSON structure:
         "messages": [{"role": "user", "content": prompt}]
     }).encode()
 
-   req = urllib.request.Request(
-    ANTHROPIC_API_URL,
-    data=payload,
-    headers={
-        "Content-Type": "application/json",
-        "x-api-key": "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",
-        "anthropic-version": "2023-06-01"
-    },
-    method="POST"
-)
+    req = urllib.request.Request(
+        ANTHROPIC_API_URL,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+            "anthropic-version": "2023-06-01"
+        },
+        method="POST"
+    )
 
     with urllib.request.urlopen(req, timeout=30) as resp:
         data = json.loads(resp.read())
@@ -52,11 +52,14 @@ Return this exact JSON structure:
         raw = re.sub(r"```json|```", "", raw).strip()
         return json.loads(raw)
 
+
 history = []
+
 
 @app.route("/")
 def index():
     return send_from_directory("static", "index.html")
+
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
@@ -76,9 +79,11 @@ def analyze():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/history")
 def get_history():
     return jsonify(list(reversed(history[-20:])))
+
 
 @app.route("/stats")
 def get_stats():
@@ -101,8 +106,7 @@ def get_stats():
         "categories": cats
     })
 
+
 if __name__ == "__main__":
-    os.makedirs("static", exist_ok=True)
-    print("Starting Fake News Detector on http://localhost:5050")
-   
-app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5050)))
+    port = int(os.environ.get("PORT", 5050))
+    app.run(debug=False, host="0.0.0.0", port=port)
