@@ -5,10 +5,10 @@ import urllib.request
 
 app = Flask(__name__, static_folder='static')
 
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "YOUR_API_KEY_HERE")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+API_KEY = os.environ.get("GROQ_API_KEY", "")
 
-def call_claude(text):
+def call_groq(text):
     prompt = f"""You are a fake news detection AI. Analyze the following news article/headline and return ONLY a valid JSON object (no markdown, no explanation).
 
 Article: {text[:2000]}
@@ -30,25 +30,27 @@ Return this exact JSON structure:
 }}"""
 
     payload = json.dumps({
-        "model": "claude-sonnet-4-20250514",
+        "model": "llama3-8b-8192",
         "max_tokens": 1000,
-        "messages": [{"role": "user", "content": prompt}]
+        "messages": [
+            {"role": "system", "content": "You are a fake news detection AI. Always respond with valid JSON only."},
+            {"role": "user", "content": prompt}
+        ]
     }).encode()
 
     req = urllib.request.Request(
-        ANTHROPIC_API_URL,
+        GROQ_API_URL,
         data=payload,
         headers={
             "Content-Type": "application/json",
-            "x-api-key": API_KEY,
-            "anthropic-version": "2023-06-01"
+            "Authorization": f"Bearer {API_KEY}"
         },
         method="POST"
     )
 
     with urllib.request.urlopen(req, timeout=30) as resp:
         data = json.loads(resp.read())
-        raw = data["content"][0]["text"].strip()
+        raw = data["choices"][0]["message"]["content"].strip()
         raw = re.sub(r"```json|```", "", raw).strip()
         return json.loads(raw)
 
@@ -68,7 +70,7 @@ def analyze():
     if not text or len(text.split()) < 5:
         return jsonify({"error": "Please enter at least 5 words."}), 400
     try:
-        result = call_claude(text)
+        result = call_groq(text)
         result["text"] = text[:200]
         result["timestamp"] = datetime.now().isoformat()
         result["id"] = str(int(time.time() * 1000))
