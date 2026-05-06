@@ -35,12 +35,16 @@ Return this exact JSON structure:
         "messages": [{"role": "user", "content": prompt}]
     }).encode()
 
-    req = urllib.request.Request(
-        ANTHROPIC_API_URL,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+   req = urllib.request.Request(
+    ANTHROPIC_API_URL,
+    data=payload,
+    headers={
+        "Content-Type": "application/json",
+        "x-api-key": "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",
+        "anthropic-version": "2023-06-01"
+    },
+    method="POST"
+)
 
     with urllib.request.urlopen(req, timeout=30) as resp:
         data = json.loads(resp.read())
