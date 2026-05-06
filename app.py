@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 import json, re, time, random, os
 from datetime import datetime, timedelta
 import urllib.request
+import os
 
 app = Flask(__name__, static_folder='static')
 
@@ -99,4 +100,5 @@ def get_stats():
 if __name__ == "__main__":
     os.makedirs("static", exist_ok=True)
     print("Starting Fake News Detector on http://localhost:5050")
-    app.run(debug=False, port=5050)
+   
+app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5050)))
